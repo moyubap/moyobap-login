@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "130623829878",
+    "project_id": "login-moyobap-app",
+    "storage_bucket": "login-moyobap-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:130623829878:android:d04ea3cb00825560b8ec57",
+        "android_client_info": {
+          "package_name": "com.example.moyobaplogin"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBJN5TV6CU9FqnieSZ3Q4zoj9iljiOfqVk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
