@@ -61,5 +61,13 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+
+	<key>GMSApiKey</key>
+    <string>AIzaSyCPoBvOYO6YEAamV4xZP-9AZ-6968YIs6U</string>
+
+    <!-- 위치 권한 요청을 위한 설명 추가 -->
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>앱 사용 중 위치 정보를 사용합니다</string>
+
 </dict>
 </plist>

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -8,10 +9,8 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> {
-  // 선택된 맛집 인덱스를 추적
   int selectedRestaurantIndex = 0;
 
-  // 맛집 정보를 저장하는 리스트
   final List<Map<String, dynamic>> restaurantInfo = [
     {
       'name': '곰탕의 달인',
@@ -43,89 +42,67 @@ class _MapPageState extends State<MapPage> {
     },
   ];
 
-  // 현재 지도 확대/축소 상태를 추적
-  double _scale = 1.0;
-  final TransformationController _transformationController = TransformationController();
+  GoogleMapController? _mapController;
 
-  // 맛집 선택 시 해당 맛집으로 인덱스를 업데이트
   void selectRestaurant(int index) {
     setState(() {
       selectedRestaurantIndex = index;
     });
-  }
 
-  // 확대 기능
-  void zoomIn() {
-    setState(() {
-      _scale += 0.2;
-      _transformationController.value = Matrix4.identity()..scale(_scale);
-    });
-  }
+    final newLatLng = LatLng(
+      restaurantInfo[index]['lat'],
+      restaurantInfo[index]['lng'],
+    );
 
-  // 축소 기능
-  void zoomOut() {
-    setState(() {
-      _scale = (_scale - 0.2).clamp(1.0, 3.0); // 최소 1.0, 최대 3.0으로 제한
-      _transformationController.value = Matrix4.identity()..scale(_scale);
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _transformationController.value = Matrix4.identity()..scale(_scale);
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLng(newLatLng),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final selected = restaurantInfo[selectedRestaurantIndex]; // 선택된 맛집 정보
+    final selected = restaurantInfo[selectedRestaurantIndex];
 
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.lightBlue, // 상단 바 배경 색상
+        backgroundColor: Colors.lightBlue,
         centerTitle: true,
         title: const Text(
           '지도',
-          style: TextStyle(fontWeight: FontWeight.bold), // 앱바 제목
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
       body: SafeArea(
         child: Stack(
           children: [
-            Column(
-              children: [
-                // 지도 이미지 영역
-                SizedBox(
-                  height: 300,
-                  child: InteractiveViewer(
-                    panEnabled: true, // 지도 이동 가능 여부
-                    minScale: 1.0, // 최소 확대 배율
-                    maxScale: 3.0, // 최대 확대 배율
-                    scaleEnabled: true, // 확대/축소 기능 활성화
-                    transformationController: _transformationController,
-                    child: Image.asset(
-                      'assets/images/busanfoodmap.jpeg', // 지도 이미지 경로
-                      fit: BoxFit.cover, // 이미지 크기 조정 방식
+            Positioned.fill(
+              child: GoogleMap(
+                initialCameraPosition: CameraPosition(
+                  target: LatLng(
+                    selected['lat'],
+                    selected['lng'],
+                  ),
+                  zoom: 15,
+                ),
+                markers: {
+                  Marker(
+                    markerId: const MarkerId('selected'),
+                    position: LatLng(
+                      selected['lat'],
+                      selected['lng'],
+                    ),
+                    infoWindow: InfoWindow(
+                      title: selected['name'],
                     ),
                   ),
-                ),
-                // 확대/축소 버튼
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.zoom_in, size: 40), // 확대 아이콘
-                      onPressed: zoomIn,
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.zoom_out, size: 40), // 축소 아이콘
-                      onPressed: zoomOut,
-                    ),
-                  ],
-                ),
-              ],
+                },
+                onMapCreated: (controller) {
+                  _mapController = controller;
+                },
+                myLocationEnabled: true,
+                myLocationButtonEnabled: true,
+              ),
             ),
-            // 페이지뷰와 상세 정보
             Positioned(
               bottom: 20,
               left: 0,
@@ -133,16 +110,15 @@ class _MapPageState extends State<MapPage> {
               child: SizedBox(
                 height: 220,
                 child: PageView.builder(
-                  itemCount: restaurantInfo.length, // 맛집 정보의 개수
-                  onPageChanged: (index) => selectRestaurant(index), // 페이지 변경 시 맛집 선택
+                  itemCount: restaurantInfo.length,
+                  onPageChanged: (index) => selectRestaurant(index),
                   itemBuilder: (context, index) {
                     final info = restaurantInfo[index];
                     return Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 16.0),
                       child: RestaurantCard(
-                        info: info, // 맛집 정보 전달
+                        info: info,
                         onMorePressed: () {
-                          // 더 자세히 보기 버튼 클릭 시 상세 페이지로 이동
                           Navigator.push(
                             context,
                             MaterialPageRoute(
@@ -177,16 +153,16 @@ class RestaurantCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16), // 카드의 둥근 모서리
+        borderRadius: BorderRadius.circular(16),
       ),
-      elevation: 3, // 카드 그림자
+      elevation: 3,
       child: Padding(
         padding: const EdgeInsets.all(14.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              info['name'], // 맛집 이름
+              info['name'],
               style: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -194,25 +170,25 @@ class RestaurantCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              info['hours'], // 운영시간
+              info['hours'],
               style: const TextStyle(color: Colors.grey),
             ),
             const SizedBox(height: 8),
             Text(
-              info['description'], // 맛집 설명
-              maxLines: 2, // 최대 2줄까지 표시
-              overflow: TextOverflow.ellipsis, // 내용이 길면 생략 부호 표시
+              info['description'],
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
             const Spacer(),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  info['rating'], // 평점
+                  info['rating'],
                   style: const TextStyle(fontSize: 15),
                 ),
                 Text(
-                  '리뷰: ${info['reviewer']}', // 리뷰어 정보
+                  '리뷰: ${info['reviewer']}',
                   style: const TextStyle(
                     fontSize: 13,
                     color: Colors.grey,
@@ -223,7 +199,7 @@ class RestaurantCard extends StatelessWidget {
             Align(
               alignment: Alignment.bottomRight,
               child: TextButton(
-                onPressed: onMorePressed, // '더 자세히 보기' 버튼 클릭 시 이벤트
+                onPressed: onMorePressed,
                 child: const Text('더 자세히 보기'),
               ),
             ),
@@ -242,24 +218,22 @@ class DetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(info['name'])), // 상세 페이지 제목은 맛집 이름
+      appBar: AppBar(title: Text(info['name'])),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Image.asset('assets/images/busanfoodmap.jpeg', fit: BoxFit.cover), // 상세 이미지
+            Image.asset('assets/images/부산 맛집 맵.jpeg', fit: BoxFit.cover),
             const SizedBox(height: 16),
-            Text('⏰ 운영시간: ${info['hours']}'), // 운영시간
+            Text('⏰ 운영시간: ${info['hours']}'),
             const SizedBox(height: 8),
-            Text('⭐️ 평점: ${info['rating']}'), // 평점
+            Text('⭐️ 평점: ${info['rating']}'),
             const SizedBox(height: 8),
-            Text('💬 한줄평: ${info['description']}'), // 한줄평
+            Text('💬 한줄평: ${info['description']}'),
             const SizedBox(height: 8),
-
-            // 리뷰 목록 추가
             Text('📋 리뷰:'),
-            for (var review in info['reviews']) ...[ // 각 리뷰 출력
+            for (var review in info['reviews']) ...[
               const SizedBox(height: 8),
               Text('“$review”'),
             ],
