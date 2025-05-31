@@ -16,80 +16,80 @@ class ChatDetailPage extends StatefulWidget {
   State<ChatDetailPage> createState() => _ChatDetailPageState();
 }
 
-
 class _ChatDetailPageState extends State<ChatDetailPage> {
   final TextEditingController _messageController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   final currentUser = FirebaseAuth.instance.currentUser;
 
-  // 채팅방 ID 만들기 (UID1_UID2 형식)
-  String getChatRoomId() {
-    List<String> ids = [currentUser!.uid, widget.otherUserId];
-    ids.sort(); // UID를 알파벳순으로 정렬
-    return ids.join("_");
-  }
-
   void sendMessage() async {
-    if (_messageController.text.trim().isEmpty) return;
-
-    final message = _messageController.text.trim();
-    _messageController.clear();
-
-    final chatRoomId = getChatRoomId();
+    final text = _messageController.text.trim();
+    if (text.isEmpty) return;
 
     await FirebaseFirestore.instance
-        .collection('chat_rooms')
-        .doc(chatRoomId)
+        .collection('chats')
+        .doc(widget.chatRoomId)
         .collection('messages')
         .add({
       'senderId': currentUser!.uid,
-      'receiverId': widget.otherUserId,
-      'text': message,
-      'timestamp': Timestamp.now(),
+      'text': text,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    _messageController.clear();
+
+    // 새 메시지 위치로 스크롤 이동
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (_scrollController.hasClients) {
+        _scrollController.animateTo(
+          _scrollController.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeOut,
+        );
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final chatRoomId = getChatRoomId();
-
     return Scaffold(
-      appBar: AppBar(title: const Text('채팅')),
+      appBar: AppBar(
+        title: Text('채팅'),
+      ),
       body: Column(
         children: [
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
-                  .collection('chat_rooms')
-                  .doc(chatRoomId)
+                  .collection('chats')
+                  .doc(widget.chatRoomId)
                   .collection('messages')
-                  .orderBy('timestamp', descending: true)
+                  .orderBy('timestamp', descending: false)
                   .snapshots(),
               builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+                if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
 
                 final messages = snapshot.data!.docs;
 
                 return ListView.builder(
-                  reverse: true,
+                  controller: _scrollController,
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
-                    final msg = messages[index];
-                    final isMe = msg['senderId'] == currentUser!.uid;
+                    final data = messages[index].data() as Map<String, dynamic>;
+                    final isMe = data['senderId'] == currentUser!.uid;
 
-                    return Align(
-                      alignment:
-                      isMe ? Alignment.centerRight : Alignment.centerLeft,
+                    return Container(
+                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                       child: Container(
-                        margin:
-                        const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: isMe ? Colors.blue[100] : Colors.grey[300],
+                          color: isMe ? Colors.blueAccent : Colors.grey[300],
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: Text(msg['text']),
+                        child: Text(
+                          data['text'] ?? '',
+                          style: TextStyle(color: isMe ? Colors.white : Colors.black),
+                        ),
                       ),
                     );
                   },
@@ -97,7 +97,6 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
               },
             ),
           ),
-          Divider(height: 1),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Row(
@@ -105,8 +104,10 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                 Expanded(
                   child: TextField(
                     controller: _messageController,
-                    decoration:
-                    const InputDecoration(hintText: '메시지를 입력하세요...'),
+                    onSubmitted: (_) => sendMessage(),
+                    decoration: const InputDecoration(
+                      hintText: '메시지를 입력하세요...',
+                    ),
                   ),
                 ),
                 IconButton(

@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'profile_setup_page.dart'; // 프로필 설정 화면
 import '../home_page.dart'; // 로그인 후 이동할 홈 페이지
+import '../main.dart'; // MainPage가 별도 파일로 있는 경우
+
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -47,7 +49,7 @@ class _LoginPageState extends State<LoginPage> {
         // 프로필 있음 → 홈으로 이동
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const HomePage()),
+          MaterialPageRoute(builder: (_) => const MainPage()),
         );
       }
     } on FirebaseAuthException catch (e) {
@@ -109,6 +111,7 @@ class _LoginPageState extends State<LoginPage> {
 
               TextButton(
                 onPressed: () {
+                  Navigator.pushNamed(context, '/signup');
                   // 회원가입 또는 비밀번호 재설정 연결 가능
                 },
                 child: const Text("계정이 없으신가요? 회원가입"),
