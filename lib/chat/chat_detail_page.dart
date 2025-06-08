@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_sound/flutter_sound.dart';            // [녹음 기능 추가]
 import 'package:permission_handler/permission_handler.dart';  // [녹음 기능 추가]
 import 'package:path_provider/path_provider.dart';            // [녹음 기능 추가]
-import 'dart:io';                                            // [녹음 기능 추가]
+import 'package:http/http.dart' as http;                      // [STT 연동 추가]
+import 'dart:convert';                                        // [STT 연동 추가]
+import 'dart:io';                                             // [녹음/업로드 기능 추가]
 
 class ChatDetailPage extends StatefulWidget {
   final String otherUserId;
@@ -26,7 +28,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   final ScrollController _scrollController = ScrollController();
   final currentUser = FirebaseAuth.instance.currentUser;
 
-  // [녹음 기능 추가]
+  // [녹음 기능 변수]
   FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   bool _isRecording = false;
   String? _audioFilePath;
@@ -43,13 +45,13 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     super.dispose();
   }
 
-  // [녹음 기능 추가] 마이크 권한 요청
+  // [마이크 권한 요청]
   Future<bool> _requestPermission() async {
     var status = await Permission.microphone.request();
     return status.isGranted;
   }
 
-  // [녹음 기능 추가] 녹음 시작
+  // [녹음 시작]
   Future<void> _startRecording() async {
     bool hasPermission = await _requestPermission();
     if (!hasPermission) {
@@ -71,7 +73,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     });
   }
 
-  // [녹음 기능 추가] 녹음 종료
+  // [녹음 종료]
   Future<File?> _stopRecording() async {
     String? path = await _recorder.stopRecorder();
     setState(() {
@@ -81,21 +83,55 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     return null;
   }
 
-  // [녹음 기능 추가] 마이크 버튼 콜백
+  // [네이버 CSR STT 함수]
+  Future<String?> sttWithNaver(File audioFile) async {
+    final String clientId = 'cwu02jjjiv';         // 예: cwu02ijijw
+    final String clientSecret = 'vrZrEU6Ffc58Z01vJ6wIGZWW9mPBSQD1OdHPiwIr'; // 예: vzrE...
+
+    final url = Uri.parse('https://naveropenapi.apigw.ntruss.com/recog/v1/stt?lang=Kor');
+
+    final headers = {
+      'X-NCP-APIGW-API-KEY-ID': clientId,
+      'X-NCP-APIGW-API-KEY': clientSecret,
+      'Content-Type': 'application/octet-stream',
+    };
+
+    final audioBytes = await audioFile.readAsBytes();
+
+    final response = await http.post(url, headers: headers, body: audioBytes);
+
+    if (response.statusCode == 200) {
+      final jsonData = json.decode(utf8.decode(response.bodyBytes));
+      return jsonData['text'] as String?;
+    } else {
+      print('STT 변환 실패: ${response.statusCode} ${response.body}');
+      return null;
+    }
+  }
+
+  // [마이크 버튼 콜백]
   void _onMicButtonPressed() async {
     if (!_isRecording) {
       await _startRecording();
     } else {
       File? audioFile = await _stopRecording();
       if (audioFile != null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('녹음 완료: ${audioFile.path}')),
-        );
-        // TODO: 여기서 STT 연동 등 추가 가능!
+        // STT 연동: 네이버 API 호출
+        String? resultText = await sttWithNaver(audioFile);
+        if (resultText != null && resultText.isNotEmpty) {
+          setState(() {
+            _messageController.text = resultText;
+          });
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('STT 변환 실패')),
+          );
+        }
       }
     }
   }
 
+  // [메시지 전송 로직]
   void sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
@@ -176,7 +212,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Row(
               children: [
-                // [녹음 기능 추가] 마이크 버튼
+                // [마이크 버튼]
                 IconButton(
                   icon: Icon(
                     _isRecording ? Icons.mic : Icons.mic_none,
