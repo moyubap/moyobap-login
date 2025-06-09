@@ -52,6 +52,7 @@ class _ProfileSetupPageState extends State<ProfileSetupPage> {
     });
 
     setState(() => _isSaving = false);
+
     Navigator.pushReplacementNamed(context, '/home');
   }
 

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../databaseSvc.dart';
-import '../home_page/post_detail_page.dart'; // RecruitPost 기반으로 맞춰주세요!
+import '../home_page/post_detail_page.dart';
 
 class MyPostsPage extends StatelessWidget {
   const MyPostsPage({super.key});

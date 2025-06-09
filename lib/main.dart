@@ -1,4 +1,3 @@
-// ✅ main.dart (locationPicker 경로 추가)
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -7,10 +6,11 @@ import 'home_page/home_page.dart';
 import 'map_page.dart';
 import 'chat/chat_list_page.dart';
 import 'mypage/my_page.dart';
+
 import 'login/login.dart';
 import 'login/signup.dart';
 import 'login/loginPhone.dart';
-import 'package:moyobaplogin/home_page//location_picker_page.dart';
+import 'home_page/location_picker_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignupPage(),
         '/login-phone': (context) => const LoginPhonePage(),
-        '/locationPicker': (context) => const LocationPickerPage(), // ✅ 추가
+        '/locationPicker': (context) => const LocationPickerPage(),
       },
     );
   }

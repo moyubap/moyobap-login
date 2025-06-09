@@ -1,5 +1,6 @@
 import 'dart:io';
 
+// ✅ edit_profile_page.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -63,6 +64,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   Future<void> _saveProfile() async {
     if (!_formKey.currentState!.validate()) return;
+
     setState(() => _isLoading = true);
 
     final uid = FirebaseAuth.instance.currentUser!.uid;
@@ -80,9 +82,11 @@ class _EditProfilePageState extends State<EditProfilePage> {
     });
 
     setState(() => _isLoading = false);
+
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('프로필이 저장되었습니다.')),
     );
+
     Navigator.pop(context);
   }
 
@@ -94,8 +98,19 @@ class _EditProfilePageState extends State<EditProfilePage> {
 
   @override
   Widget build(BuildContext context) {
+    final email = FirebaseAuth.instance.currentUser?.email ?? '';
+
     return Scaffold(
-      appBar: AppBar(title: const Text('프로필 수정')),
+      appBar: AppBar(
+        title: const Text("프로필 수정"),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.check),
+            onPressed: _saveProfile,
+            tooltip: "저장",
+          ),
+        ],
+      ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -103,6 +118,7 @@ class _EditProfilePageState extends State<EditProfilePage> {
         child: Form(
           key: _formKey,
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               GestureDetector(
                 onTap: _pickImage,
@@ -121,19 +137,41 @@ class _EditProfilePageState extends State<EditProfilePage> {
               TextFormField(
                 controller: _nicknameController,
                 decoration: const InputDecoration(labelText: '닉네임'),
-                validator: (val) => val == null || val.isEmpty ? '닉네임을 입력하세요' : null,
               ),
+              const SizedBox(height: 12),
+              Text("이메일: $email", style: const TextStyle(color: Colors.grey)),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _nameController,
                 decoration: const InputDecoration(labelText: '이름'),
               ),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _bioController,
-                decoration: const InputDecoration(labelText: '소개'),
+                decoration: const InputDecoration(labelText: '한 줄 소개'),
               ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<int>(
+                value: _age,
+                items: List.generate(100, (i) => i + 1)
+                    .map((age) => DropdownMenuItem(value: age, child: Text("$age")))
+                    .toList(),
+                onChanged: (val) => setState(() => _age = val),
+                decoration: const InputDecoration(labelText: '나이'),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<String>(
+                value: _gender,
+                items: const ["남", "여"]
+                    .map((g) => DropdownMenuItem(value: g, child: Text(g)))
+                    .toList(),
+                onChanged: (val) => setState(() => _gender = val),
+                decoration: const InputDecoration(labelText: '성별'),
+              ),
+              const SizedBox(height: 12),
               TextFormField(
                 controller: _likesController,
-                decoration: const InputDecoration(labelText: '좋아하는 것'),
+                decoration: const InputDecoration(labelText: '좋아하는 음식'),
               ),
               TextFormField(
                 controller: _dislikesController,

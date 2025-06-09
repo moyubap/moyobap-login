@@ -48,8 +48,14 @@ class ProfileDetailPage extends StatelessWidget {
               Center(
                 child: Column(
                   children: [
-                    Text(data['nickname'] ?? '', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                    Text(data['email'] ?? '', style: const TextStyle(color: Colors.grey)),
+                    Text(
+                      data['nickname'] ?? '',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      data['email'] ?? '',
+                      style: const TextStyle(color: Colors.grey),
+                    ),
                   ],
                 ),
               ),
@@ -57,6 +63,11 @@ class ProfileDetailPage extends StatelessWidget {
               _infoTile("닉네임", data['nickname']),
               _infoTile("이메일", data['email']),
               _infoTile("이름", data['name']),
+              _infoTile("한 줄 소개", data['bio']),
+              _infoTile("나이", data['age']?.toString()),
+              _infoTile("성별", data['gender']),
+              _infoTile("좋아하는 음식", data['likes']),
+              _infoTile("싫어하는 음식", data['dislikes']),
               _infoTile("소개", data['bio']),
               _infoTile("좋아하는 것", data['likes']),
               _infoTile("싫어하는 것", data['dislikes']),
@@ -68,9 +79,16 @@ class ProfileDetailPage extends StatelessWidget {
   }
 
   Widget _infoTile(String title, String? value) {
-    return ListTile(
-      title: Text(title),
-      subtitle: Text(value ?? "없음"),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: ListTile(
+        title: Text(title),
+        subtitle: Text(value ?? "없음"),
+      ),
     );
   }
 }

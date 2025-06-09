@@ -43,6 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+<<<<<<< HEAD
 # Dart & Flutter
 .dart_tool/
 .packages
@@ -69,3 +70,5 @@ macos/Runner.xcworkspace/
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
 
+=======
+>>>>>>> 715bdb82886fcf4ea270e587c022cb6d25a5a0ad

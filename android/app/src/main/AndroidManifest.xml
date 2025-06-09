@@ -7,11 +7,14 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
 
     <!-- 외부 앱 호출 명시 (Android 11+) -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT" />
+            <data android:mimeType="text/plain"/>
         </intent>
     </queries>
 
@@ -49,6 +52,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
     </application>
 
 </manifest>
