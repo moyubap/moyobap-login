@@ -103,8 +103,8 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
 
   // 네이버 CSR STT 함수
   Future<String?> sttWithNaver(File audioFile) async {
-    final String clientId = '여기에_클라이언트_ID_입력';
-    final String clientSecret = '여기에_클라이언트_SECRET_입력';
+    final String clientId = 'cwu02jjjiv';
+    final String clientSecret = 'vrZrEU6Ffc58Z01vJ6wIGZWW9mPBSQD1OdHPiwIr';
 
     final url = Uri.parse('https://naveropenapi.apigw.ntruss.com/recog/v1/stt?lang=Kor');
 
