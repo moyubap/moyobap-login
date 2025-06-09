@@ -2,12 +2,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
-import 'package:flutter_sound/flutter_sound.dart';            // [녹음 기능 추가]
-import 'package:permission_handler/permission_handler.dart';  // [녹음 기능 추가]
-import 'package:path_provider/path_provider.dart';            // [녹음 기능 추가]
-import 'package:http/http.dart' as http;                      // [STT 연동 추가]
-import 'dart:convert';                                        // [STT 연동 추가]
-import 'dart:io';                                             // [녹음/업로드 기능 추가]
+import 'package:flutter_sound/flutter_sound.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'dart:io';
 
 class ChatDetailPage extends StatefulWidget {
   final String otherUserId;
@@ -28,10 +28,13 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
   final ScrollController _scrollController = ScrollController();
   final currentUser = FirebaseAuth.instance.currentUser;
 
-  // [녹음 기능 변수]
+  // 녹음 관련 변수
   FlutterSoundRecorder _recorder = FlutterSoundRecorder();
   bool _isRecording = false;
   String? _audioFilePath;
+
+  // [닉네임 캐시]
+  final Map<String, String> _userNicknames = {};
 
   @override
   void initState() {
@@ -45,13 +48,13 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     super.dispose();
   }
 
-  // [마이크 권한 요청]
+  // 마이크 권한 요청
   Future<bool> _requestPermission() async {
     var status = await Permission.microphone.request();
     return status.isGranted;
   }
 
-  // [녹음 시작]
+  // 녹음 시작
   Future<void> _startRecording() async {
     bool hasPermission = await _requestPermission();
     if (!hasPermission) {
@@ -73,7 +76,7 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     });
   }
 
-  // [녹음 종료]
+  // 녹음 종료
   Future<File?> _stopRecording() async {
     String? path = await _recorder.stopRecorder();
     setState(() {
@@ -83,10 +86,10 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     return null;
   }
 
-  // [네이버 CSR STT 함수]
+  // 네이버 CSR STT 함수
   Future<String?> sttWithNaver(File audioFile) async {
-    final String clientId = 'cwu02jjjiv';         // 예: cwu02ijijw
-    final String clientSecret = 'vrZrEU6Ffc58Z01vJ6wIGZWW9mPBSQD1OdHPiwIr'; // 예: vzrE...
+    final String clientId = '여기에_클라이언트_ID_입력';
+    final String clientSecret = '여기에_클라이언트_SECRET_입력';
 
     final url = Uri.parse('https://naveropenapi.apigw.ntruss.com/recog/v1/stt?lang=Kor');
 
@@ -109,14 +112,13 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     }
   }
 
-  // [마이크 버튼 콜백]
+  // 마이크 버튼 콜백
   void _onMicButtonPressed() async {
     if (!_isRecording) {
       await _startRecording();
     } else {
       File? audioFile = await _stopRecording();
       if (audioFile != null) {
-        // STT 연동: 네이버 API 호출
         String? resultText = await sttWithNaver(audioFile);
         if (resultText != null && resultText.isNotEmpty) {
           setState(() {
@@ -131,7 +133,18 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
     }
   }
 
-  // [메시지 전송 로직]
+  // [닉네임 불러오기 & 캐싱]
+  Future<String> _getNickname(String userId) async {
+    if (_userNicknames.containsKey(userId)) {
+      return _userNicknames[userId]!;
+    }
+    final doc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    String nickname = doc.data()?['nickname'] ?? '알수없음';
+    _userNicknames[userId] = nickname;
+    return nickname;
+  }
+
+  // 메시지 전송
   void sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
@@ -186,22 +199,41 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
                     final data = messages[index].data() as Map<String, dynamic>;
-                    final isMe = data['senderId'] == currentUser!.uid;
+                    final senderId = data['senderId'] ?? '';
+                    final isMe = senderId == currentUser!.uid;
 
-                    return Container(
-                      alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: isMe ? Colors.blueAccent : Colors.grey[300],
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Text(
-                          data['text'] ?? '',
-                          style: TextStyle(color: isMe ? Colors.white : Colors.black),
-                        ),
-                      ),
+                    return FutureBuilder<String>(
+                      future: _getNickname(senderId),
+                      builder: (context, nickSnapshot) {
+                        String nickname = nickSnapshot.connectionState == ConnectionState.done
+                            ? (nickSnapshot.data ?? '')
+                            : '...';
+                        return Container(
+                          alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                          child: Column(
+                            crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                            children: [
+                              if (!isMe)
+                                Text(
+                                  nickname,
+                                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                ),
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: isMe ? Colors.blueAccent : Colors.grey[300],
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: Text(
+                                  data['text'] ?? '',
+                                  style: TextStyle(color: isMe ? Colors.white : Colors.black),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
                     );
                   },
                 );
@@ -212,7 +244,6 @@ class _ChatDetailPageState extends State<ChatDetailPage> {
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Row(
               children: [
-                // [마이크 버튼]
                 IconButton(
                   icon: Icon(
                     _isRecording ? Icons.mic : Icons.mic_none,
